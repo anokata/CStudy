@@ -5,12 +5,57 @@
 #include <alsa/asoundlib.h>
 #include "audio.h"
 
+snd_pcm_hw_params_t *setup(snd_pcm_t *handle) {
+    int rc;
+    snd_pcm_hw_params_t *params;
+
+    snd_pcm_hw_params_alloca(&params);
+    snd_pcm_hw_params_any(handle, params);
+
+    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+
+    rc = snd_pcm_hw_params(handle, params);
+    if (rc < 0) {
+    fprintf(stderr,
+            "unable to set hw parameters: %s\n",
+            snd_strerror(rc));
+    exit(1);
+    }
+    return params;
+}
+
+void getup(snd_pcm_t *handle, snd_pcm_hw_params_t *params) {
+    int rc;
+
+    snd_pcm_hw_params_alloca(&params);
+    snd_pcm_hw_params_any(handle, params);
+
+    snd_pcm_format_t fval = 0;
+    snd_pcm_hw_params_get_format(params, &fval);
+    printf("format = '%s' (%s)\n\n",
+      snd_pcm_format_name(fval),
+      snd_pcm_format_description(fval));
+}
+
+void test() {
+    int rc;
+    snd_pcm_t *handle = audio_get_handle();
+    snd_pcm_hw_params_t *params;
+
+    params = setup(handle);
+    getup(handle, params);
+
+    audio_close(handle);
+}
+
 int main() {
+    test();
   int rc;
   snd_pcm_t *handle;
   snd_pcm_hw_params_t *params;
   unsigned int val, val2;
-  int dir;
+  int dir = 0;
   snd_pcm_uframes_t frames;
 
   handle = audio_get_handle();
