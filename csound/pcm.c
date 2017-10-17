@@ -6,13 +6,20 @@
 #define RATE 22050
 #define seconds 1
 
-int snd_setup(snd_pcm_t *pcm_handle) {
+struct audio_config {
+    int size;
+    unsigned int period;
+	snd_pcm_uframes_t frames;
+};
+
+struct audio_config snd_setup(snd_pcm_t *pcm_handle) {
 	int rate = RATE;
 	int buff_size;
     int channels = CHANNELS;
 	unsigned int rc;
-	unsigned int tmp;
+	unsigned int period;
     int dir = 0;
+	snd_pcm_uframes_t frames;
 	snd_pcm_hw_params_t *params;
 	/* Allocate parameters object and fill it with default values*/
 	snd_pcm_hw_params_alloca(&params);
@@ -29,24 +36,30 @@ int snd_setup(snd_pcm_t *pcm_handle) {
     }
 
     snd_pcm_hw_params_get_period_size(params, &frames, &dir);
-	snd_pcm_hw_params_get_period_time(params, &tmp, NULL);
+	snd_pcm_hw_params_get_period_time(params, &period, NULL);
 	buff_size = frames * channels * 2 /* 2 -> sample size */;
-    return buff_size;
+    struct audio_config cfg;
+    cfg.size = buff_size;
+    cfg.period = period;
+    cfg.frames = frames;
+    return cfg;
 }
 
 int main(int argc, char **argv) {
 	char *buff;
 	unsigned int pcm, dir;
+	snd_pcm_uframes_t frames;
 	int buff_size, loops;
     int channels = CHANNELS;
-	snd_pcm_uframes_t frames;
     snd_pcm_t *pcm_handle = audio_get_handle();
-	buff_size = snd_setup(pcm_handle);
+    struct audio_config config = snd_setup(pcm_handle);
+	buff_size = config.size;
+    unsigned int period = config.period;
+    frames = config.frames;
 
 	buff = (char *) malloc(buff_size);
 
-    unsigned int period = audio_get_period(params);
-    printf("pcm: %u\nframes %d buf:%d\n params: %p %lx\n", pcm_handle, frames, buff_size, params, params);
+    /* printf("pcm: %u\nframes %d buf:%d\n params: %p %lx\n", pcm_handle, frames, buff_size, params, params); */
 
 	for (loops = (seconds * 1000000) / period; loops > 0; loops--) {
 		if (pcm = read(0, buff, buff_size) == 1) {
