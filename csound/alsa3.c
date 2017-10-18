@@ -36,14 +36,36 @@ void audio_play_2(snd_pcm_t *handle, unsigned int period, char *buffer, int size
     int rc = 0;
     long loops;
     loops = 1000000 / period;
+    printf("loops: %ld\n", loops);
     float a = 0.0;
+    int stage = loops / 4;
+    int fq = 500;
+    float delta = 0.0001 * (fq / 1);
+    int noise = 1;
+    int vol = 100;
     while (loops > 0) {
         loops--;
         /* buffer, size); */
-        for (int i = 0; i < size; i++) {
-            /* buffer[i] = rand() * (sinf(a += 1.0) * 100); */
-            buffer[i] = (sinf(a += 0.10) * 100) + (rand() % 50);
-        }
+		if (loops < stage) {
+			fq -= 10;
+			delta = 0.0001 * (fq / 1);
+			for (int i = 0; i < size; i++) {
+				buffer[i] = ((sinf(a) * vol) + (rand() % noise));
+				a += delta;
+			}
+		} else if (loops < stage * 2) {
+			fq += 10;
+			delta = 0.0001 * (fq / 1);
+			for (int i = 0; i < size; i++) {
+                buffer[i] = ((sinf(a) * vol) + (rand() % noise));
+                a += delta;
+			}
+		} else {
+			for (int i = 0; i < size; i++) {
+				buffer[i] = ((sinf(a) * vol) + (rand() % noise));
+				a += delta;
+			}
+		}
 
         rc = snd_pcm_writei(handle, buffer, frames);
         if (rc == -EPIPE) {
@@ -56,6 +78,7 @@ void audio_play_2(snd_pcm_t *handle, unsigned int period, char *buffer, int size
             fprintf(stderr, "short write, write %d frames\n", rc);
             }
     }
+    printf("end fq: %d\n", fq);
 }
 
 
