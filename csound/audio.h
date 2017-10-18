@@ -3,7 +3,9 @@
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define PCM_DEVICE "default"
 #define CHANNELS 1
+#ifndef RATE
 #define RATE 22050
+#endif
 
 typedef struct AudioOut {
     snd_pcm_t *handle;

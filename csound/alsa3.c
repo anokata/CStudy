@@ -1,12 +1,13 @@
 /* Use the newer ALSA API */
 #define ALSA_PCM_NEW_HW_PARAMS_API
 
+#define RATE 44100
 #include <alsa/asoundlib.h>
 #include "audio.h"
 #include <stdlib.h>
 #include <math.h>
 
-void audio_play_1(snd_pcm_t *handle, unsigned int period, char *buffer, int size, snd_pcm_uframes_t frames) {
+void audio_play_1(snd_pcm_t *handle, unsigned int period, u_int16_t *buffer, int size, snd_pcm_uframes_t frames) {
     int rc = 0;
     long loops;
     loops = 1000000 / period;
@@ -32,40 +33,49 @@ void audio_play_1(snd_pcm_t *handle, unsigned int period, char *buffer, int size
     }
 }
 
-void audio_play_2(snd_pcm_t *handle, unsigned int period, char *buffer, int size, snd_pcm_uframes_t frames) {
+void audio_gen_sine(u_int16_t *buffer, int size) {
+    printf("buf all size: %d\n", size);
+    float a = 0.0;
+    int fq = 500;
+    float delta = 0.000001 * (fq / 1);
+    int noise = 1;
+    int vol = 200000;
+
+    for (int i = 0; i < size; i++) {
+        buffer[i] = ((sinf(a) * vol));// + (rand() % noise));
+        a += delta;
+    }
+    printf("end fq: %d\n", fq);
+}
+
+void audio_gen_tri(u_int16_t *buffer, int size) {
+    int a = 0;
+    int delta = 1;
+    int treshold = 200000;
+
+    for (int i = 0; i < size; i++) {
+        buffer[i] = a * 1000;
+        a += delta;
+        a %= treshold;
+    }
+}
+
+void audio_play_2(snd_pcm_t *handle, unsigned int period, u_int16_t *buffer, int size, snd_pcm_uframes_t frames) {
     int rc = 0;
     long loops;
     loops = 1000000 / period;
-    printf("loops: %ld\n", loops);
-    float a = 0.0;
-    int stage = loops / 4;
-    int fq = 500;
-    float delta = 0.0001 * (fq / 1);
-    int noise = 1;
-    int vol = 100;
+    printf("loops: %ld size: %d period: %d\n", loops, size, period);
+
+    int len = loops * size;
+    u_int16_t *buf = malloc(len * 2);
+    audio_gen_sine(buf, len);
+    /* audio_gen_tri(buf, len); */
+    int i = 0;
+
     while (loops > 0) {
         loops--;
-        /* buffer, size); */
-		if (loops < stage) {
-			fq -= 10;
-			delta = 0.0001 * (fq / 1);
-			for (int i = 0; i < size; i++) {
-				buffer[i] = ((sinf(a) * vol) + (rand() % noise));
-				a += delta;
-			}
-		} else if (loops < stage * 2) {
-			fq += 10;
-			delta = 0.0001 * (fq / 1);
-			for (int i = 0; i < size; i++) {
-                buffer[i] = ((sinf(a) * vol) + (rand() % noise));
-                a += delta;
-			}
-		} else {
-			for (int i = 0; i < size; i++) {
-				buffer[i] = ((sinf(a) * vol) + (rand() % noise));
-				a += delta;
-			}
-		}
+        memcpy(buffer, buf + i * size, size);
+        i++;
 
         rc = snd_pcm_writei(handle, buffer, frames);
         if (rc == -EPIPE) {
@@ -78,7 +88,7 @@ void audio_play_2(snd_pcm_t *handle, unsigned int period, char *buffer, int size
             fprintf(stderr, "short write, write %d frames\n", rc);
             }
     }
-    printf("end fq: %d\n", fq);
+    free(buf);
 }
 
 
@@ -90,7 +100,7 @@ int main() {
     unsigned int val = 0;
     int dir = 0;
     snd_pcm_uframes_t frames;
-    char *buffer = NULL;
+    u_int16_t *buffer = NULL;
 
     handle = audio_get_handle();
 
@@ -101,7 +111,7 @@ int main() {
 
     snd_pcm_hw_params_get_period_size(params, &frames, &dir);
     size = frames * 2 * CHANNELS;
-    buffer = (char *) malloc(size);
+    buffer = (u_int16_t *) malloc(size * 2);
 
     snd_pcm_hw_params_get_period_time(params, &val, &dir);
     snd_pcm_hw_params_free(params);

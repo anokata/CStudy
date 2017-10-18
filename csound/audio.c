@@ -51,6 +51,7 @@ char *audio_config(snd_pcm_t *handle, long loops) {
 
     snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+    /* snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S8); */
     snd_pcm_hw_params_set_channels(handle, params, CHANNELS);
 
     val = RATE;
