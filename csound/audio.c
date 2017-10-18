@@ -74,3 +74,23 @@ char *audio_config(snd_pcm_t *handle, long loops) {
     snd_pcm_hw_params_free(params);
     return buffer;
 }
+
+void audio_conf(snd_pcm_t *handle, snd_pcm_hw_params_t *params) {
+    unsigned int val = 0;
+    int dir = 0;
+    snd_pcm_uframes_t frames;
+
+    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+    snd_pcm_hw_params_set_channels(handle, params, CHANNELS);
+
+    val = RATE;
+    snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
+
+    frames = 32;
+    snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
+
+    int rc = 0;
+    rc = snd_pcm_hw_params(handle, params);
+    audio_error_check(rc);
+}

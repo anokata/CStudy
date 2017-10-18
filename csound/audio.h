@@ -20,4 +20,6 @@ void audio_close(snd_pcm_t *pcm_handle);
 AudioOut audio_make();
 void audio_free(AudioOut au);
 void audio_error_check(int rc);
-char *audio_config(snd_pcm_t *handle);
+/* char *audio_config(snd_pcm_t *handle); */
+char *audio_config(snd_pcm_t *handle, long loops);
+void audio_conf(snd_pcm_t *handle, snd_pcm_hw_params_t *params);
