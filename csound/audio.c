@@ -49,7 +49,7 @@ char *audio_config(snd_pcm_t *handle, long loops) {
     snd_pcm_hw_params_malloc(&params);
     snd_pcm_hw_params_any(handle, params);
 
-    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_NONINTERLEAVED);
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
     /* snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S8); */
     snd_pcm_hw_params_set_channels(handle, params, CHANNELS);
@@ -81,8 +81,10 @@ void audio_conf(snd_pcm_t *handle, snd_pcm_hw_params_t *params) {
     int dir = 0;
     snd_pcm_uframes_t frames;
 
-    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
+    snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_NONINTERLEAVED);
+    /* snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_U16_LE); */
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+    /* snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_U8); */
     snd_pcm_hw_params_set_channels(handle, params, CHANNELS);
 
     val = RATE;
