@@ -64,22 +64,47 @@ char *wave_char16(int16_t x) {
     return buf;
 }
 
-void audio_gen_sine16(uint16_t *buffer, int size) {
+int16_t f1value2sample(float value) {
+    /* 2^16 = 65536  2^15=32768  */
+    /* [-1.0 .. +1.0] -> [ -32768..+32767 ]*/
+    return round(value * 32767.0);
+}
+
+// pre attack, fade x%, y%
+// size
+
+void audio_gen_sine16(int16_t *buffer, int size) {
     printf("buf all size: %d\n", size);
     float a = 0.0;
-    uint16_t fq = 100;
+    int16_t fq = 100;
     float delta = 0.001 * fq;
-    uint16_t noise = 1;
-    uint16_t vol = 1;
+    int16_t noise = 1;
+    float vol = 0.1; // 0..1
+
+    int fadein = 10; // %
+    int fadein_len = round((fadein / 100.0) * size);
+    float fade_delta = (1.0 - vol) / fadein_len;
+    int fadeout = 10; // %
+    int fadeout_size = round((fadeout / 100.0) * size);
+    int fadeout_len = size - fadeout_size;
+    float fadeout_delta = 1.0 / fadeout_size;
 
     for (int i = 0; i < size; i++) {
-        buffer[i] = round((sinf(a) * 32000 * vol));
+        buffer[i] = f1value2sample((sinf(a) + sinf(a*3)) / 2.0 * vol);
+        if (i < fadein_len)
+            vol += fade_delta;
+
+        if (i > fadeout_len)
+            vol -= fadeout_delta;
+
         printf("%s\n", wave_char16(buffer[i]));
         a += delta;
         a = fmod(a, (M_PI * 2));
     }
     printf("\n");
-    printf("end fq: %d\n", fq);
+    printf("fadein %f %d \n", fade_delta, fadein_len);
+    printf("fadeout %f %d \n", fadeout_delta, fadeout_len);
+    printf("size: %d end fq: %d delta: %f, Vol:%f\n", size, fq, fade_delta, vol);
 }
 
 
@@ -117,12 +142,12 @@ void audio_gen_tri(u_int16_t *buffer, int size) {
     }
 }
 
-#define sint uint16_t
+#define sint int16_t
 //#define sint uint8_t
 void audio_play_2(snd_pcm_t *handle, unsigned int period, sint *buffer, int size, snd_pcm_uframes_t frames) {
     int rc = 0;
     long loops;
-    loops = 1000000 / period;
+    loops = 1300000 / period;
     printf("loops: %ld size: %d period: %d\n", loops, size, period);
 
     int len = loops * size;
