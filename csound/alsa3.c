@@ -140,13 +140,16 @@ void audio_gen_tri(sint *buffer, int size, float delta) {
 
     for (int i = 0; i < size; i++) {
         buffer[i] = f1value2sample(a);
-        printf("%s\n", wave_char8(buffer[i]));
+        /* printf("%s\n", wave_char8(buffer[i])); */
         /* printf("%d %f \n", buffer[i], a); */
-        a += delta;
         if (a >= treshold) delta *= -1.0;
         if (a <= treshold_down) delta *= -1.0;
+        a += delta;
     }
     printf("\n");
+}
+
+void audio_apply_linear_fade(sint *buffer, int size, int start, int end) {
 }
 
 void audio_play_2(snd_pcm_t *handle, unsigned int period, sint *buffer, int size, snd_pcm_uframes_t frames, int time, float d) {
@@ -158,8 +161,8 @@ void audio_play_2(snd_pcm_t *handle, unsigned int period, sint *buffer, int size
     int len = loops * size;
     sint *buf = malloc(len * sizeof(sint));
     /* audio_gen_sine8(buf, len); */
-    audio_gen_sine16(buf, len);
-    /* audio_gen_tri(buf, len, d); */
+    /* audio_gen_sine16(buf, len); */
+    audio_gen_tri(buf, len, d);
     int i = 0;
 
     while (loops > 0) {
@@ -206,7 +209,7 @@ int main() {
     snd_pcm_hw_params_get_period_time(params, &val, &dir);
     snd_pcm_hw_params_free(params);
 
-    audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0012);
+    audio_play_2(handle, val, buffer, size, frames, 1000000, 0.012);
     /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0501); */
     /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0502); */
     /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0503); */
