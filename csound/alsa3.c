@@ -91,6 +91,7 @@ void audio_gen_sine16(int16_t *buffer, int size) {
     int fadeout_len = size - fadeout_size;
     float fadeout_delta = 1.0 / fadeout_size;
 
+//https://stackoverflow.com/questions/28521857/strange-sine-wave-on-output-of-an-alsa-linux-c-program
     for (int i = 0; i < size; i++) {
         buffer[i] = f1value2sample((sinf(a) + sinf(a*3)) / 2.0 * vol);
         if (i < fadein_len)
@@ -99,7 +100,7 @@ void audio_gen_sine16(int16_t *buffer, int size) {
         if (i > fadeout_len)
             vol -= fadeout_delta;
 
-        printf("%s\n", wave_char16(buffer[i]));
+        /* printf("%s\n", wave_char16(buffer[i])); */
         a += delta;
         a = fmod(a, (M_PI * 2));
     }
@@ -213,6 +214,19 @@ int main() {
     snd_pcm_drain(handle);
     snd_pcm_close(handle);
     free(buffer);
+
+
+    int time = 1000000;
+    int period = val;
+    long loops = time / period;
+    int len = loops * size;
+    sint *buf = malloc(len * sizeof(sint));
+    /* audio_gen_sine16(buf, len); */
+    audio_gen_tri(buf, len, 0.065);
+    FILE *fout = fopen("/tmp/wav", "wb");
+    fwrite(buf, len, sizeof(sint), fout);
+    fclose(fout);
+    free(buf);
 
     return 0;
 }
