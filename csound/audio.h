@@ -4,7 +4,7 @@
 #define PCM_DEVICE "default"
 #define CHANNELS 1
 #ifndef RATE
-#define RATE 22050
+#define RATE 44100
 #endif
 
 typedef struct AudioOut {

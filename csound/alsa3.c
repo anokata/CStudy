@@ -8,6 +8,8 @@
 #include <math.h>
 #include <stdint.h>
 
+#define sint int16_t
+
 void audio_play_1(snd_pcm_t *handle, unsigned int period, u_int16_t *buffer, int size, snd_pcm_uframes_t frames) {
     int rc = 0;
     long loops;
@@ -35,7 +37,7 @@ void audio_play_1(snd_pcm_t *handle, unsigned int period, u_int16_t *buffer, int
 }
 
 
-#define width 20
+#define width 50
 char buf[width * 2] = "                    ";
 char *wave_char8(int8_t x) {
     int value = x - 128;
@@ -67,7 +69,7 @@ char *wave_char16(int16_t x) {
 int16_t f1value2sample(float value) {
     /* 2^16 = 65536  2^15=32768  */
     /* [-1.0 .. +1.0] -> [ -32768..+32767 ]*/
-    return round(value * 32767.0);
+    return trunc(value * 32767.0);
 }
 
 // pre attack, fade x%, y%
@@ -76,16 +78,16 @@ int16_t f1value2sample(float value) {
 void audio_gen_sine16(int16_t *buffer, int size) {
     printf("buf all size: %d\n", size);
     float a = 0.0;
-    int16_t fq = 100;
+    int16_t fq = 90;
     float delta = 0.001 * fq;
     int16_t noise = 1;
     float vol = 0.1; // 0..1
 
     int fadein = 10; // %
-    int fadein_len = round((fadein / 100.0) * size);
+    int fadein_len = trunc((fadein / 100.0) * size);
     float fade_delta = (1.0 - vol) / fadein_len;
     int fadeout = 10; // %
-    int fadeout_size = round((fadeout / 100.0) * size);
+    int fadeout_size = trunc((fadeout / 100.0) * size);
     int fadeout_len = size - fadeout_size;
     float fadeout_delta = 1.0 / fadeout_size;
 
@@ -117,7 +119,7 @@ void audio_gen_sine8(uint8_t *buffer, int size) {
     uint8_t vol = 1;
 
     for (int i = 0; i < size; i++) {
-        buffer[i] = round((sinf(a) * 127 * vol));// + (rand() % noise));
+        buffer[i] = trunc((sinf(a) * 127 * vol));// + (rand() % noise));
         /* printf("%d \n", buffer[i]); */
         printf("%s\n", wave_char8(buffer[i]));
         /* printf("%f ", sinf(a)); */
@@ -130,31 +132,33 @@ void audio_gen_sine8(uint8_t *buffer, int size) {
 }
 
 
-void audio_gen_tri(u_int16_t *buffer, int size) {
-    u_int16_t a = 0;
-    u_int16_t delta = 1;
-    u_int16_t treshold = 2000;
+void audio_gen_tri(sint *buffer, int size, float delta) {
+    float treshold = 1.0;
+    float treshold_down = -1.0;
+    float a = -1.0;
 
     for (int i = 0; i < size; i++) {
-        buffer[i] = a * 1000;
+        buffer[i] = f1value2sample(a);
+        printf("%s\n", wave_char8(buffer[i]));
+        /* printf("%d %f \n", buffer[i], a); */
         a += delta;
-        a %= treshold;
+        if (a >= treshold) delta *= -1.0;
+        if (a <= treshold_down) delta *= -1.0;
     }
+    printf("\n");
 }
 
-#define sint int16_t
-//#define sint uint8_t
-void audio_play_2(snd_pcm_t *handle, unsigned int period, sint *buffer, int size, snd_pcm_uframes_t frames) {
+void audio_play_2(snd_pcm_t *handle, unsigned int period, sint *buffer, int size, snd_pcm_uframes_t frames, int time, float d) {
     int rc = 0;
     long loops;
-    loops = 1300000 / period;
+    loops = time/ period;
     printf("loops: %ld size: %d period: %d\n", loops, size, period);
 
     int len = loops * size;
-    sint *buf = malloc(len * 2);
+    sint *buf = malloc(len * sizeof(sint));
     /* audio_gen_sine8(buf, len); */
     audio_gen_sine16(buf, len);
-    /* audio_gen_tri(buf, len); */
+    /* audio_gen_tri(buf, len, d); */
     int i = 0;
 
     while (loops > 0) {
@@ -201,7 +205,10 @@ int main() {
     snd_pcm_hw_params_get_period_time(params, &val, &dir);
     snd_pcm_hw_params_free(params);
 
-    audio_play_2(handle, val, buffer, size, frames);
+    audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0012);
+    /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0501); */
+    /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0502); */
+    /* audio_play_2(handle, val, buffer, size, frames, 1000000, 0.0503); */
 
     snd_pcm_drain(handle);
     snd_pcm_close(handle);
